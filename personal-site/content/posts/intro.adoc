@@ -1,0 +1,45 @@
+= My First Hugo AsciiDoc Page
+Francisco Darla <francisco@example.com>
+:description: A test page written in AsciiDoc for Hugo.
+:toc:
+:sectnums:
+
+== Introduction
+
+This is my very first page written in *AsciiDoc* and rendered by **Hugo**.  
+AsciiDoc is more powerful than Markdown — you get attributes, references, and more.
+
+== Lists
+
+=== Unordered
+* Item one
+* Item two
+* Item three
+
+=== Ordered
+. Step one
+. Step two
+. Step three
+
+== Code Example
+
+Here’s some inline code: `print("Hello World")`.
+
+[source,python]
+----
+def hello():
+    print("Hello, Hugo + AsciiDoc!")
+----
+
+== Links and Images
+
+Check out the Hugo docs: https://gohugo.io/[Hugo Official Site].
+
+image::/images/example.png[Example image, width=300]
+
+== Next Steps
+
+- Add more `.adoc` files to `content/`
+- Build your site with `hugo server`
+- Deploy to GitHub Pages
+
