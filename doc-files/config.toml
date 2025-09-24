@@ -1,0 +1,9 @@
+baseURL = 'http://example.org/'
+languageCode = 'en-us'
+title = 'My New Hugo Site'
+theme = "PaperMod"
+[markup]
+  [markup.asciidocExt]
+    workingFolderCurrent = true
+    safeMode = 'unsafe'
+
