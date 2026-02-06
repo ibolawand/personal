@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import {HttpClient} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -53,14 +53,12 @@ export class ChatBot {
       username: "einstein",
       content: text
     }).subscribe({
-      next: (res:any) => {
+      next: (res: any) => {
         console.log(res);
-        this.messages.push({ role: 'assistant', text: res.reply, time: Date.now()});
+        this.messages.push({ role: 'assistant', text: res.reply, time: Date.now() });
       }
     })
   }
-
-
 
   private scrollToBottom() {
     const panel = document.querySelector('.assistant-panel .messages');

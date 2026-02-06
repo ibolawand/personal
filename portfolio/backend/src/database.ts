@@ -47,11 +47,14 @@ export class DB {
     public static async createUsersTable(): Promise<void> {
         const db = await getDb();
         await db.exec(`
-            CREATE TABLE IF NOT EXISTS users (
+            CREATE TABLE IF NOT EXISTS customers (
                                                  id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                                 username TEXT NOT NULL UNIQUE,
-                                                 display_name TEXT,
+                                                 Name TEXT NOT NULL UNIQUE,
+                                                 Email TEXT,
+                                                 Subject TEXT,
+                                                 Message TEXT,
                                                  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+
             );
             CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
         `);

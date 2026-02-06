@@ -1,6 +1,8 @@
-import {Injectable} from '@angular/core';
-import {Category, Folder, Note} from '../model/models';
-import {Subject, Observable, BehaviorSubject, debounceTime, distinctUntilChanged, switchMap, tap, Subscription, of, from} from 'rxjs';
+import { Injectable } from '@angular/core';
+import { Category, Folder, Note, User } from '../model/models';
+import { Subject, Observable, BehaviorSubject, debounceTime, distinctUntilChanged, switchMap, tap, Subscription, of, from } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 export enum SaveStatus {
   IDLE = 'idle',
   SAVING = 'saving',
@@ -15,22 +17,50 @@ declare global {
         updateNote: (note: Note) => Promise<{ ok: boolean; error?: string }>;
         getAllNotes: () => Promise<Note[]>;
         getNoteWithCertainCategory: (categoryID: number) => Promise<Note[]>;
-        deleteNote: (id:number) => Promise<{ ok: boolean; error?: string }>;
+        deleteNote: (id: number) => Promise<{ ok: boolean; error?: string }>;
         getCategories: () => Promise<Category[]>;
         createCategory: (categoryName: string) => Promise<Category>;
         deleteCategory: (categoryID: number) => Promise<void>;
+        createUser: (user: User) => Promise<User>;
+        login: (user: User) => Promise<User>;
+        logout: (user: User) => Promise<void>;
+        getToken: () => Promise<string | null>;
+        saveToken: (token: string) => Promise<void>;
+        removeToken: () => Promise<void>;
       };
       folder: {
         addFolder: (folder: any) => Promise<any>,
         getAllFolders: () => Promise<Folder[]>,
         deleteFolder: (folder: Folder) => Promise<void>,
+      },
+      window: {
+        minimizeWindow: () => Promise<void>,
+        maximizeWindow: () => Promise<void>,
+        closeWindow: () => Promise<void>,
       }
     };
   }
 }
 
-@Injectable({providedIn: 'root'})
+@Injectable({ providedIn: 'root' })
 export class NoteService {
+
+
+  constructor(private http: HttpClient) {
+
+  }
+
+  //#region Auth
+  public async getToken() {
+    return await window.electronAPI.notes.getToken();
+  }
+  public async saveToken(token: string) {
+    return await window.electronAPI.notes.saveToken(token);
+  }
+  public async removeToken() {
+    return await window.electronAPI.notes.removeToken();
+  }
+
   //#region Notes
   private notesChangedSubject = new Subject<Note>();
   private saveSubject = new Subject<Note>();
@@ -38,6 +68,7 @@ export class NoteService {
   private saveSub?: Subscription;
   private saveStatusSubject = new BehaviorSubject<SaveStatus>(SaveStatus.IDLE);
   public readonly saveStatus$ = this.saveStatusSubject.asObservable();
+
 
 
   // shared notes cache and observable
@@ -60,7 +91,7 @@ export class NoteService {
     }
     return res;
   }
-  private initAutoSave(){
+  private initAutoSave() {
     this.saveSub = this.saveSubject.pipe(
       debounceTime(600),
       distinctUntilChanged((previous, current) => previous.content === current.content && previous.title === current.title),
@@ -126,8 +157,8 @@ export class NoteService {
     this.notesChangedSubject.next(note);
   }
 
-  private saveNoteToElectron(note:Note){
-    return  window.electronAPI.notes.createNote(note);
+  private saveNoteToElectron(note: Note) {
+    return window.electronAPI.notes.createNote(note);
   }
 
   // Public method components can call to trigger a debounced auto-save
@@ -165,7 +196,7 @@ export class NoteService {
       this.categoriesCache = Array.isArray(rows) ? rows : [];
       this.categoriesSubject.next([...this.categoriesCache]);
       console.log('Categories loaded:', this.categoriesCache);
-    }catch (e){
+    } catch (e) {
       console.error('Failed to load categories:', e);
     }
   }
@@ -181,7 +212,7 @@ export class NoteService {
   notifyCategoriesChanged(categoryID: number): void {
     this.categoriesChangedSubject.next();
   }
-   getCategories() {
+  getCategories() {
     return this.categories$;
   }
 
@@ -194,10 +225,10 @@ export class NoteService {
   public readonly folderChanged$ = this.isFolderAdded.asObservable();
 
   async getFolders(): Promise<Folder[]> {
-     return await window.electronAPI.folder.getAllFolders();
+    return await window.electronAPI.folder.getAllFolders();
   }
   async addFolder(folder: Folder): Promise<void> {
-      return await window.electronAPI.folder.addFolder(folder);
+    return await window.electronAPI.folder.addFolder(folder);
   }
   async deleteFolder(folder: Folder): Promise<void> {
     return await window.electronAPI.folder.deleteFolder(folder);
@@ -206,4 +237,26 @@ export class NoteService {
     this.isFolderAdded.next();
   }
   //#endregion
+
+  //#region User
+  async createUser(user: User): Promise<User> {
+    return await window.electronAPI.notes.createUser(user);
+  }
+  async login(user: User): Promise<User> {
+    return await window.electronAPI.notes.login(user);
+  }
+
+  //#endregion
+
+  //#region Dashboard
+  public async maximizeWindow() {
+    return await window.electronAPI.window.maximizeWindow();
+  }
+  public async minimizeWindow() {
+    return await window.electronAPI.window.minimizeWindow();
+  }
+  public async closeWindow() {
+    return await window.electronAPI.window.closeWindow();
+  }
+  //#endregion Dashboard
 }

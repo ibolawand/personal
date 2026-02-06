@@ -16,4 +16,9 @@ export const rendererConfig: Configuration = {
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css'],
   },
+  devServer: {
+    port: 4200,
+    open: true,
+    historyApiFallback: true,
+  }
 };

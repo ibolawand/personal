@@ -24,15 +24,19 @@ export class DB {
             CREATE TABLE IF NOT EXISTS notes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 categoryID INTEGER NOT NULL,
+                userID INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 content TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(categoryID) REFERENCES CATEGORIES
+                FOREIGN KEY(categoryID) REFERENCES CATEGORIES,
+                FOREIGN KEY(userID) REFERENCES USERS
             );
             CREATE TABLE IF NOT EXISTS categories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                category TEXT NOT NULL
+                category TEXT NOT NULL,
+                userID INTEGER NOT NULL,
+                FOREIGN KEY(userID) REFERENCES USERS
             );
             CREATE TABLE IF NOT EXISTS FOLDERS(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,10 +44,19 @@ export class DB {
                 description TEXT NOT NULL,
                 colour TEXT DEFAULT '#4ade80',
                 categoryID INTEGER,
+                userID INTEGER NOT NULL,
                 notesID INTEGER,
                 FOREIGN KEY(categoryID) REFERENCES CATEGORIES(id) ON DELETE CASCADE,
-                FOREIGN KEY(notesID) REFERENCES  notes(id) ON DELETE CASCADE
-            )
+                FOREIGN KEY(notesID) REFERENCES  notes(id) ON DELETE CASCADE,
+                FOREIGN KEY(userID) REFERENCES USERS
+            );  
+            CREATE TABLE IF NOT EXISTS USERS(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT NOT NULL,
+                email TEXT NOT NULL,
+                password TEXT NOT NULL,
+                logged_in BOOLEAN DEFAULT 0
+            );
         `);
     }
 

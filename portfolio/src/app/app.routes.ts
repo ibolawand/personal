@@ -2,9 +2,11 @@ import { Routes } from '@angular/router';
 import { LandingPage } from './landing-page/landing-page';
 import { Home } from './home/home';
 import { SkillOverview } from './skill-overview/skill-overview';
+import {Contact} from './contact/contact';
 
 export const routes: Routes = [
     {path: '', component:LandingPage },
     {path:'home',component:Home},
-    {path:'skills',component:SkillOverview}
+    {path:'skills',component:SkillOverview},
+    {path:'contact',component:Contact}
 ];

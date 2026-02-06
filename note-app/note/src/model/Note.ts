@@ -14,3 +14,10 @@ interface Folder {
     name: string,
     colour: string,
 }
+interface User {
+    id: number,
+    username: string,
+    email: string,
+    password: string,
+    logged_in: boolean,
+}

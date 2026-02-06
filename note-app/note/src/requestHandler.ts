@@ -1,7 +1,110 @@
-import {ipcMain} from 'electron';
-import {DB} from './database/database';
+import { BrowserWindow, ipcMain, ipcRenderer, safeStorage } from 'electron';
+import { DB } from './database/database';
+import Store from 'electron-store';
+const crypto = require('crypto');
+
+type Storetype = {
+    auth_token: string;
+}
+const store = new Store<Storetype>({
+    defaults: {
+        auth_token: ''
+    }
+});
+
+
 
 export function setUpHandlers() {
+    ipcMain.handle('close-window', () => {
+        const window = BrowserWindow.getFocusedWindow();
+        if (window) {
+            window.close();
+        }
+    })
+
+    ipcMain.handle('minimize-window', () => {
+        const window = BrowserWindow.getFocusedWindow();
+        if (window) {
+            window.minimize();
+        }
+    })
+
+    ipcMain.handle('maximize-window', () => {
+        const window = BrowserWindow.getFocusedWindow();
+        if (window) {
+            window.setFullScreen(!window.isFullScreen());
+        }
+    })
+
+    const isEncryptionEnabled = safeStorage.isEncryptionAvailable();
+
+    ipcMain.handle('save-token', (_event, token: string) => {
+        if (!isEncryptionEnabled) {
+            store.set('auth_token', token);
+            return;
+        }
+
+        const encrypted = safeStorage.encryptString(token).toString('base64');
+        store.set('auth_token', encrypted);
+    });
+
+    ipcMain.handle('get-token', (event) => {
+        const encrypted = store.get('auth_token')
+        if (!encrypted) return null
+        try {
+            return safeStorage.decryptString(Buffer.from(encrypted, 'base64'))
+        } catch (error) {
+            console.error('get-token error:', error);
+            return null
+        }
+    })
+    ipcMain.handle('removeToken', () => {
+        store.delete('auth_token');
+    })
+    //#region users
+    ipcMain.handle('createUser', async (event, user: User) => {
+        try {
+            const db = await DB.getConnection();
+            let stmt = await db.prepare(`SElECT username,email FROM users where username=? and email=?`)
+            let us = await stmt.get<User>(user.username, user.email)
+            if (us?.username == user.username && us?.email == user.email) {
+                return { ok: false, error: "user already exists" }
+            }
+            await stmt.finalize();
+            stmt = await db.prepare(`INSERT INTO users (username, email, password) VALUES (?, ?, ?)`);
+            await stmt.run(user.username, user.email, user.password);
+            await stmt.finalize();
+        } catch (err) {
+            console.error('createUser error:', err);
+        }
+    })
+    ipcMain.handle('login', async (event, user: User) => {
+        try {
+            const db = await DB.getConnection();
+            const stmt = await db.prepare(`SELECT * FROM users WHERE username = ? AND password = ?`);
+            const result = await stmt.get(user.username, user.password);
+            if (result) {
+                const randomToken = crypto.randomBytes(32).toString('hex');
+                store.set('auth_token', randomToken);
+            }
+            await stmt.finalize();
+            return result;
+        } catch (err) {
+            console.error('login error:', err);
+        }
+    })
+    ipcMain.handle('logout', async (event, user: User) => {
+        try {
+            const db = await DB.getConnection();
+            const stmt = await db.prepare(`UPDATE users SET logged_in = 0 WHERE id = ?`);
+            await stmt.run(user.id);
+            await stmt.finalize();
+        } catch (err) {
+            console.error('logout error:', err);
+        }
+    })
+    //#endregion
+    //#region notes
     ipcMain.handle('create:note', async (event, data: any) => {
         try {
             const db = await DB.getConnection();
@@ -10,10 +113,10 @@ export function setUpHandlers() {
             const res = await stmt.run(data.title, data.content, data.categoryID);
             await stmt.finalize();
             const id = res?.lastID;
-            return {ok: true, id};
+            return { ok: true, id };
         } catch (err) {
             console.error('create:note error:', err);
-            return {ok: false, error: String(err)};
+            return { ok: false, error: String(err) };
         }
     });
     ipcMain.handle('delete:note', async (event, id: number) => {
@@ -22,7 +125,7 @@ export function setUpHandlers() {
             const stmt = await db.prepare(`DELETE FROM notes WHERE id = ?`);
             await stmt.run(id);
             await stmt.finalize();
-            return {ok: true};
+            return { ok: true };
         } catch (err) {
             console.error('delete:note error:', err);
         }
@@ -36,10 +139,10 @@ export function setUpHandlers() {
                                            WHERE id = ?`);
             await stmt.run(data.title, data.content, data.categoryID, data.id);
             await stmt.finalize();
-            return {ok: true};
+            return { ok: true };
         } catch (err) {
             console.error('update:note error:', err);
-            return {ok: false, error: String(err)};
+            return { ok: false, error: String(err) };
         }
     });
     ipcMain.handle('getAllNotes', async () => {
@@ -54,6 +157,7 @@ export function setUpHandlers() {
             return [];
         }
     });
+    //#endregion notes
     //#region categories
     ipcMain.handle('getCategories', async () => {
         try {
@@ -119,15 +223,15 @@ export function setUpHandlers() {
         }
     });
     //#endregion
-    ipcMain.handle('addFolder', async (event, folder:Folder) => {
-       try {
-           const db = await DB.getConnection();
-           const stmt = await db.prepare(`INSERT INTO FOLDERS (name,colour) VALUES(?,?)`)
-           await stmt.run(folder.name,folder.colour);
-           await stmt.finalize();
-       }catch(err) {
-           console.error('createFolder error:', err);
-       }
+    ipcMain.handle('addFolder', async (event, folder: Folder) => {
+        try {
+            const db = await DB.getConnection();
+            const stmt = await db.prepare(`INSERT INTO FOLDERS (name,colour) VALUES(?,?)`)
+            await stmt.run(folder.name, folder.colour);
+            await stmt.finalize();
+        } catch (err) {
+            console.error('createFolder error:', err);
+        }
     })
     ipcMain.handle('getAllFolders', async (event) => {
         try {
@@ -136,18 +240,20 @@ export function setUpHandlers() {
             const result: Folder[] = await stmt.all();
             await stmt.finalize();
             return result;
-        }catch (err){
+        } catch (err) {
             console.error('getAllFolders error:', err);
         }
     })
-    ipcMain.handle('deleteFolder', async (event, folder:Folder) => {
+    ipcMain.handle('deleteFolder', async (event, folder: Folder) => {
         try {
             const db = await DB.getConnection();
             const stmt = await db.prepare(`DELETE FROM FOLDERS WHERE id = ?;`);
             await stmt.run(folder.id);
             await stmt.finalize();
-        }catch (e) {
+        } catch (e) {
             console.error('deleteFolder error:', e);
         }
     })
+    //#endregion folders
+
 }

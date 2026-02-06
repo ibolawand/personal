@@ -1,4 +1,4 @@
-export interface Note{
+export interface Note {
   id?: number,
   title: string,
   content: string,
@@ -11,7 +11,7 @@ export interface Category {
 export interface Folder {
   id: number,
   name: string,
-  colour:string,
+  colour: string,
 }
 
 export interface ToolbarFormat {
@@ -37,3 +37,19 @@ export interface ToolbarHighlight {
   color: string;
   label: string;
 }
+
+export type CalendarEvent = {
+  day: number;
+  startHour: number;
+  duration: number;
+  title: string;
+  color: string;
+}
+export interface User {
+  id: number,
+  username: string,
+  email: string,
+  password: string,
+  logged_in: boolean,
+}
+

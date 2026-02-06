@@ -1,10 +1,10 @@
-import {Component, OnInit} from '@angular/core';
-import {NoteService} from '../../services/NoteService';
-import {Category, Note} from '../../model/models';
-import {BehaviorSubject, Observable, Subscription} from 'rxjs';
-import {AsyncPipe} from '@angular/common';
-import {FormsModule} from '@angular/forms';
-import {ModelService} from '../model.service';
+import { Component, OnInit } from '@angular/core';
+import { NoteService } from '../../services/NoteService';
+import { Category, Note } from '../../model/models';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { AsyncPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ModelService } from '../model.service';
 
 @Component({
   selector: 'app-overview-panel',
@@ -19,17 +19,14 @@ export class OverviewPanel implements OnInit {
   notes: Note[] = []
   allNotes: Note[] = []
   currentCategories: Category[] = [];
-  categories: Category[]=[]
+  categories: Category[] = []
   newCategory: string = '';
   addCategoryWindow: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   openCategoryId: number | null = null;
-  openNote= false;
+  openNote = false;
   clickedCategory: number | null = null;
 
-
-
-
-  constructor(protected noteService: NoteService,public modelService:ModelService) {
+  constructor(protected noteService: NoteService, public modelService: ModelService) {
 
   }
 
@@ -82,7 +79,7 @@ export class OverviewPanel implements OnInit {
         await this.getNotes();
       });
       this.noteService.categories$.subscribe(list => {
-        this.currentCategories=list
+        this.currentCategories = list
       })
 
     } catch (error) {
@@ -107,10 +104,10 @@ export class OverviewPanel implements OnInit {
     this.closeAddCategoryWindow();
   }
   async deleteCategory(id: number) {
-     await this.noteService.deleteCategory(id)
-     this.noteService.notifyCategoriesChanged(id);
+    await this.noteService.deleteCategory(id)
+    this.noteService.notifyCategoriesChanged(id);
   }
   async deleteNote(id: number) {
-       await this.noteService.deleteNote(id)
+    await this.noteService.deleteNote(id)
   }
 }
