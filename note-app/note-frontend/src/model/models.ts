@@ -7,6 +7,7 @@ export interface Note {
 export interface Category {
   id: number,
   name: string,
+  userID: number | null,
 }
 export interface Folder {
   id: number,

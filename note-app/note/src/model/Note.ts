@@ -7,6 +7,7 @@ interface Note {
 interface Category {
     id: number,
     name: string,
+    userID: number,
 }
 
 interface Folder {

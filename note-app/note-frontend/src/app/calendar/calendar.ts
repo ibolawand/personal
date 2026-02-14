@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { ModelService } from '../model.service';
-import { AsyncPipe, NgClass, NgStyle } from '@angular/common';
+import { AsyncPipe, NgClass } from '@angular/common';
 
 interface CalendarEvent {
   day: number;
@@ -20,8 +20,7 @@ interface AllDayEvent {
   standalone: true,
   imports: [
     AsyncPipe,
-    NgClass,
-    NgStyle
+    NgClass
   ],
   templateUrl: './calendar.html',
   styleUrl: './calendar.css'

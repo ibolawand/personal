@@ -6,12 +6,9 @@ import { Category, Folder, Note } from '../../model/models';
 import { BehaviorSubject, Subscription } from 'rxjs';
 import { OverviewPanel } from '../overview-panel/overview-panel';
 import { AsyncPipe } from '@angular/common';
-import { FolderAdder } from '../folder-adder/note-adder';
 import { Editor } from '../editor/editor';
-import { ChatBot } from '../chat-bot/chat-bot';
 import { SideBar } from '../side-bar/side-bar';
 import { Calendar } from '../calendar/calendar';
-import { EventAdder } from '../event-adder/event-adder';
 import { StartingPage } from '../starting-page/starting-page';
 import { CreateAccount } from '../creat-account/creat-account';
 import { WindowBar } from '../window-bar/window-bar';
@@ -24,13 +21,11 @@ import { WindowBar } from '../window-bar/window-bar';
     OverviewPanel,
     Editor,
     AsyncPipe,
-    ChatBot,
     SideBar,
     Calendar,
-    EventAdder,
     StartingPage,
     CreateAccount,
-    WindowBar
+    WindowBar,
   ],
   templateUrl: './home-app.html',
   styleUrls: ['./home-app.css']

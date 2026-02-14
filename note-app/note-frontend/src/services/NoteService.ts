@@ -19,7 +19,7 @@ declare global {
         getNoteWithCertainCategory: (categoryID: number) => Promise<Note[]>;
         deleteNote: (id: number) => Promise<{ ok: boolean; error?: string }>;
         getCategories: () => Promise<Category[]>;
-        createCategory: (categoryName: string) => Promise<Category>;
+        createCategory: (category: Partial<Category>) => Promise<Category>;
         deleteCategory: (categoryID: number) => Promise<void>;
         createUser: (user: User) => Promise<User>;
         login: (user: User) => Promise<User>;
@@ -47,7 +47,10 @@ export class NoteService {
 
 
   constructor(private http: HttpClient) {
-
+    const storedId = localStorage.getItem('userId');
+    if (storedId) {
+      this.userIdSource.next(Number(storedId));
+    }
   }
 
   //#region Auth
@@ -201,8 +204,8 @@ export class NoteService {
     }
   }
 
-  async addCategory(categoryName: string) {
-    return await window.electronAPI.notes.createCategory(categoryName);
+  async addCategory(category: Partial<Category>) {
+    return await window.electronAPI.notes.createCategory(category);
   }
 
   async deleteCategory(categoryID: number) {
@@ -239,11 +242,33 @@ export class NoteService {
   //#endregion
 
   //#region User
+  private userIdSource = new BehaviorSubject<number>(0);
+  currentUserId$ = this.userIdSource.asObservable();
+
   async createUser(user: User): Promise<User> {
     return await window.electronAPI.notes.createUser(user);
   }
   async login(user: User): Promise<User> {
-    return await window.electronAPI.notes.login(user);
+    const loggedInUser = await window.electronAPI.notes.login(user);
+    this.checkUser(loggedInUser, loggedInUser.id);
+    return loggedInUser;
+  }
+  async createAccount(user: User): Promise<User> {
+    const createdUser = await window.electronAPI.notes.createUser(user);
+    console.log('createdUser', createdUser);
+    this.checkUser(createdUser, createdUser.id);
+    return createdUser;
+  }
+  getUserId(): number {
+    return this.userIdSource.value;
+  }
+  checkUser(givenUser: User, userid: number) {
+    if (givenUser && userid) {
+      localStorage.setItem('userId', String(userid));
+      this.userIdSource.next(userid);
+      return true;
+    }
+    return false;
   }
 
   //#endregion

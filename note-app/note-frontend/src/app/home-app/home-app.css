@@ -11,7 +11,10 @@ body {
   width: 100%;
   background: #1a1d2e;
   color: #e4e7eb;
+  padding-top: 40px;
 }
+
+
 
 app-category-panel {
   display: flex;

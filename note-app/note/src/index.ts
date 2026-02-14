@@ -16,10 +16,11 @@ const createWindow = (): void => {
     const mainWindow = new BrowserWindow({
         height: 800,
         width: 800,
-        frame: false,
+        //frame: false,
         webPreferences: {
             preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         },
+
 
     });
 

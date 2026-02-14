@@ -74,8 +74,13 @@ export function setUpHandlers() {
             stmt = await db.prepare(`INSERT INTO users (username, email, password) VALUES (?, ?, ?)`);
             await stmt.run(user.username, user.email, user.password);
             await stmt.finalize();
+            stmt = await db.prepare(`SELECT * FROM users WHERE username = ? AND email = ?`);
+            const result = await stmt.get(user.username, user.email) as User;
+            await stmt.finalize();
+            return result;
         } catch (err) {
             console.error('createUser error:', err);
+            return null;
         }
     })
     ipcMain.handle('login', async (event, user: User) => {
@@ -185,10 +190,11 @@ export function setUpHandlers() {
         }
     });
 
-    ipcMain.handle('createCategory', async (event, categoryInput: any) => {
+    ipcMain.handle('createCategory', async (event, categoryInput: Category) => {
         try {
             const db = await DB.getConnection();
             const name: string = typeof categoryInput === 'string' ? categoryInput : categoryInput?.name;
+
             if (!name || typeof name !== 'string') {
                 throw new Error('Invalid category name');
             }
@@ -198,8 +204,8 @@ export function setUpHandlers() {
             if (existing) {
                 return { id: existing.id, name: existing.category };
             }
-            stmt = await db.prepare(`INSERT INTO categories (category) VALUES (?)`);
-            const res = await stmt.run(name);
+            stmt = await db.prepare(`INSERT INTO categories (category,userID) VALUES (?,?)`);
+            const res = await stmt.run(name, categoryInput.userID);
             await stmt.finalize();
             const id = res?.lastID;
             return { id, name };

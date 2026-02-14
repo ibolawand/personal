@@ -14,8 +14,7 @@ import * as bcrypt from 'bcryptjs';
   standalone: true
 })
 export class CreateAccount {
-  user: User = {
-    id: 0,
+  user: Partial<User> = {
     username: '',
     email: '',
     password: '',
@@ -32,10 +31,16 @@ export class CreateAccount {
       if (this.user.password != this.confirmPassword) {
         alert("Passwords do not match");
       }
-      const hashedPassword = await bcrypt.hash(this.user.password, 10);
+      const hashedPassword = await bcrypt.hash(this.user.password!, 10);
       this.user.password = hashedPassword;
       this.user.logged_in = true;
-      this.noteService.createUser(this.user);
+      const createdUser = await this.noteService.createAccount(this.user as User);
+
+      // Check if account creation was successful
+      if (!createdUser || !createdUser.id) {
+        alert("Failed to create account. User may already exist.");
+        return;
+      }
       this.modelService.isLoggedIn.next(true);
       this.modelService.openDashboard();
       this.noteService.maximizeWindow();

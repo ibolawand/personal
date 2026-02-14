@@ -33,9 +33,7 @@ export class OverviewPanel implements OnInit {
   async getNotes(): Promise<void> {
     await this.noteService.loadNotes();
   }
-  async loadCategories(): Promise<void> {
-    await this.noteService.loadCategories();
-  }
+
 
   async getNotesFromCertainCategories(categoryID: number): Promise<void> {
     console.log('Clicked category ID:', categoryID);
@@ -70,7 +68,7 @@ export class OverviewPanel implements OnInit {
     try {
       console.log(this.currentCategories);
       await this.getNotes();
-      await this.loadCategories();
+      await this.noteService.loadCategories();
       this.noteService.notes$.subscribe(list => {
         this.allNotes = list;
       });
@@ -96,12 +94,20 @@ export class OverviewPanel implements OnInit {
   }
 
   async addCategory(categoryName: string): Promise<void> {
-    const created = await this.noteService.addCategory(categoryName);
+    console.log("categoryName", categoryName);
+    console.log("userId", this.noteService!.getUserId());
+    const category: Partial<Category> = {
+      name: categoryName,
+      userID: this.noteService!.getUserId()
+    }
+    const created = await this.noteService.addCategory(category);
+
     if (created && (created as any).id !== undefined) {
       this.noteService.notifyCategoriesChanged(created.id);
     }
     this.newCategory = '';
     this.closeAddCategoryWindow();
+    await this.noteService.loadCategories();
   }
   async deleteCategory(id: number) {
     await this.noteService.deleteCategory(id)

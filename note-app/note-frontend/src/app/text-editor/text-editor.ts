@@ -3,12 +3,12 @@ import { NoteService } from '../../services/NoteService';
 import { FormsModule } from '@angular/forms';
 import { AsyncPipe } from '@angular/common';
 import { Subscription } from 'rxjs';
-import {Note, ToolbarFormat, ToolbarHeading, ToolbarHighlight, ToolbarList} from '../../model/models';
+import { Note, ToolbarFormat, ToolbarHeading, ToolbarHighlight, ToolbarList } from '../../model/models';
 import { ModelService } from '../model.service';
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import { Color } from '@tiptap/extension-color';
-import {TextStyle} from '@tiptap/extension-text-style';
+import { TextStyle } from '@tiptap/extension-text-style';
 import Highlight from '@tiptap/extension-highlight';
 import Underline from '@tiptap/extension-underline';
 import { TiptapEditorDirective } from 'ngx-tiptap';
@@ -23,7 +23,7 @@ import { TiptapEditorDirective } from 'ngx-tiptap';
   templateUrl: './text-editor.html',
   styleUrl: './text-editor.css'
 })
-export class textEditor implements OnInit, OnDestroy {
+export class TextEditor implements OnInit, OnDestroy {
   title: string = '';
   content: string = '';
   currentNote: Note | null = null;
@@ -60,7 +60,7 @@ export class textEditor implements OnInit, OnDestroy {
   constructor(
     protected modelService: ModelService,
     protected noteService: NoteService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     // Initialize TipTap editor
@@ -81,8 +81,8 @@ export class textEditor implements OnInit, OnDestroy {
       onUpdate: ({ editor }) => {
         if (this.currentNote) {
           this.currentNote.content = editor.getHTML();
-              this.modelService.updateCurrentNote(this.currentNote);
-              this.noteService.triggerAutoSave(this.currentNote);
+          this.modelService.updateCurrentNote(this.currentNote);
+          this.noteService.triggerAutoSave(this.currentNote);
         }
       }
     });
