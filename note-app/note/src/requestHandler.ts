@@ -1,7 +1,7 @@
 import { BrowserWindow, ipcMain, ipcRenderer, safeStorage } from 'electron';
 import { DB } from './database/database';
 import Store from 'electron-store';
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 type Storetype = {
     auth_token: string;
@@ -32,7 +32,11 @@ export function setUpHandlers() {
     ipcMain.handle('maximize-window', () => {
         const window = BrowserWindow.getFocusedWindow();
         if (window) {
-            window.setFullScreen(!window.isFullScreen());
+            if (window.isMaximized()) {
+                window.unmaximize();
+            } else {
+                window.maximize();
+            }
         }
     })
 
@@ -66,7 +70,7 @@ export function setUpHandlers() {
         try {
             const db = await DB.getConnection();
             let stmt = await db.prepare(`SElECT username,email FROM users where username=? and email=?`)
-            let us = await stmt.get<User>(user.username, user.email)
+            const us = await stmt.get<User>(user.username, user.email)
             if (us?.username == user.username && us?.email == user.email) {
                 return { ok: false, error: "user already exists" }
             }
@@ -113,9 +117,9 @@ export function setUpHandlers() {
     ipcMain.handle('create:note', async (event, data: any) => {
         try {
             const db = await DB.getConnection();
-            const stmt = await db.prepare(`INSERT INTO notes (title, content, categoryID)
-                                           VALUES (?, ?, ?)`);
-            const res = await stmt.run(data.title, data.content, data.categoryID);
+            const stmt = await db.prepare(`INSERT INTO notes (title, content, categoryID, userID)
+                                           VALUES (?, ?, ?, ?)`);
+            const res = await stmt.run(data.title, data.content, data.categoryID, data.userID);
             await stmt.finalize();
             const id = res?.lastID;
             return { ok: true, id };
@@ -150,12 +154,12 @@ export function setUpHandlers() {
             return { ok: false, error: String(err) };
         }
     });
-    ipcMain.handle('getAllNotes', async () => {
+    ipcMain.handle('getAllNotes', async (event,userId:number) => {
         try {
             const db = await DB.getConnection();
-            const rows = await db.all(`SELECT *
-                                       FROM notes
-                                       ORDER BY created_at DESC`);
+            const rows:Note[] = await db.all(`SELECT *
+                                       FROM notes where userID=?
+                                       ORDER BY created_at DESC`,[userId]);
             return rows;
         } catch (err) {
             console.error('getAllNotes error:', err);
@@ -164,24 +168,27 @@ export function setUpHandlers() {
     });
     //#endregion notes
     //#region categories
-    ipcMain.handle('getCategories', async () => {
+    ipcMain.handle('getCategories', async (event, userId: number) => {
         try {
             const db = await DB.getConnection();
-            const rows = await db.all(`SELECT id, category FROM categories ORDER BY category ASC`);
-            return (rows || []).map((r: any) => ({ id: r.id, name: r.category }));
+            const validUserId = userId || 0;
+            const rows = await db.prepare(`SELECT id, category FROM categories where userID = ? ORDER BY category ASC`);
+            const result = await rows.all(validUserId)
+            await rows.finalize();
+            return (result || []).map((r: any) => ({ id: r.id, name: r.category }));
         } catch (err) {
             console.error('getCategories error:', err);
             return [];
         }
     });
 
-    ipcMain.handle('getNoteWithCertainCategory', async (event, categoryID: number) => {
+    ipcMain.handle('getNoteWithCertainCategory', async (event, categoryID: number, userId: number) => {
         try {
             const db = await DB.getConnection();
             const stmt = await db.prepare(`SELECT *
                                            FROM notes
-                                           WHERE categoryID = ?;`);
-            const result = await stmt.all(categoryID);
+                                           WHERE categoryID = ? AND userID = ?;`);
+            const result = await stmt.all(categoryID, userId);
             await stmt.finalize();
             return result;
         } catch (err) {
@@ -198,14 +205,15 @@ export function setUpHandlers() {
             if (!name || typeof name !== 'string') {
                 throw new Error('Invalid category name');
             }
-            let stmt = await db.prepare(`SELECT id, category FROM categories WHERE category = ?`);
-            const existing = await stmt.get(name);
+            const validUserId = categoryInput.userID || 0;
+            let stmt = await db.prepare(`SELECT id, category FROM categories WHERE category = ? AND userID = ?`);
+            const existing = await stmt.get(name, validUserId);
             await stmt.finalize();
             if (existing) {
                 return { id: existing.id, name: existing.category };
             }
             stmt = await db.prepare(`INSERT INTO categories (category,userID) VALUES (?,?)`);
-            const res = await stmt.run(name, categoryInput.userID);
+            const res = await stmt.run(name, validUserId);
             await stmt.finalize();
             const id = res?.lastID;
             return { id, name };

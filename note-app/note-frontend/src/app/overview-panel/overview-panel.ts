@@ -71,6 +71,10 @@ export class OverviewPanel implements OnInit {
       await this.noteService.loadCategories();
       this.noteService.notes$.subscribe(list => {
         this.allNotes = list;
+        // Also update the filtered notes for the current category
+        if (this.openCategoryId !== null) {
+          this.notes = this.allNotes.filter(n => n.categoryID === this.openCategoryId);
+        }
       });
 
       this.noteService.notesChanged$.subscribe(async () => {
@@ -102,12 +106,14 @@ export class OverviewPanel implements OnInit {
     }
     const created = await this.noteService.addCategory(category);
 
+
     if (created && (created as any).id !== undefined) {
       this.noteService.notifyCategoriesChanged(created.id);
     }
     this.newCategory = '';
     this.closeAddCategoryWindow();
     await this.noteService.loadCategories();
+    console.log("Categories", this.currentCategories);
   }
   async deleteCategory(id: number) {
     await this.noteService.deleteCategory(id)

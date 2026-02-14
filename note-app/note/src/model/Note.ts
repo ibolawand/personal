@@ -3,6 +3,7 @@ interface Note {
     content: string,
     categoryID: number,
     folderID: number,
+    userID:number,
 }
 interface Category {
     id: number,

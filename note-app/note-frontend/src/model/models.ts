@@ -3,6 +3,7 @@ export interface Note {
   title: string,
   content: string,
   categoryID: number,
+  userID?: number,
 }
 export interface Category {
   id: number,

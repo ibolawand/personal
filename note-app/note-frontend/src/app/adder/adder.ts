@@ -22,7 +22,9 @@ export class Adder implements OnInit {
   categoryID: number = 0;
   categories$ = new Observable<Category[]>();
   categories: Category[] = [];
-  currentNote: Note = {title: '', content: '', categoryID: 0};
+  currentNote: Note= {title: '', content: '', categoryID: 0};
+
+
 
   constructor(private http: HttpClient,
               public modelService: ModelService,
@@ -30,34 +32,11 @@ export class Adder implements OnInit {
   ) {
   }
 
+
   async ngOnInit() {
     this.noteService.categories$.subscribe(list => this.categories = list);
   }
 
-
-
-  async saveNote() {
-    if (this.currentNote.id) {
-      this.noteService.notifyNoteChanged(this.currentNote);
-      this.currentNote = {title: '', content: '', categoryID: 0};
-      this.title = '';
-      this.content = '';
-      this.modelService.toggleOpenNewNote();
-      return;
-    }
-
-    const process = await this.noteService.createNote(this.currentNote);
-    if (process && process.ok) {
-      if (process.id) this.currentNote.id = process.id;
-      this.noteService.notifyNoteChanged(this.currentNote);
-      this.currentNote = {title: '', content: '', categoryID: 0};
-      this.title = '';
-      this.content = '';
-      this.modelService.toggleOpenNewNote();
-    } else {
-      console.error('Error occurred while saving note');
-    }
-  }
 
   onTitleChange(value: string) {
     this.title = value;

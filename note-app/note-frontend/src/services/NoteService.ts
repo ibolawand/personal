@@ -15,10 +15,10 @@ declare global {
       notes: {
         createNote: (note: Note) => Promise<{ ok: boolean; id?: number; error?: string }>;
         updateNote: (note: Note) => Promise<{ ok: boolean; error?: string }>;
-        getAllNotes: () => Promise<Note[]>;
-        getNoteWithCertainCategory: (categoryID: number) => Promise<Note[]>;
+        getAllNotes: (userId:number) => Promise<Note[]>;
+        getNoteWithCertainCategory: (categoryID: number,userID:number) => Promise<Note[]>;
         deleteNote: (id: number) => Promise<{ ok: boolean; error?: string }>;
-        getCategories: () => Promise<Category[]>;
+        getCategories: (userId: number) => Promise<Category[]>;
         createCategory: (category: Partial<Category>) => Promise<Category>;
         deleteCategory: (categoryID: number) => Promise<void>;
         createUser: (user: User) => Promise<User>;
@@ -44,7 +44,7 @@ declare global {
 
 @Injectable({ providedIn: 'root' })
 export class NoteService {
-
+  private userIdSource = new BehaviorSubject<number>(0);
 
   constructor(private http: HttpClient) {
     const storedId = localStorage.getItem('userId');
@@ -85,10 +85,19 @@ export class NoteService {
   public readonly notesChanged$: Observable<Note> = this.notesChangedSubject.asObservable();
 
   async createNote(note: Note) {
+    if (note.userID === undefined || note.userID === null || note.userID === 0) {
+      note.userID = this.getUserId();
+    }
     const res = await window.electronAPI.notes.createNote(note);
     if (res && res.ok) {
       if (res.id) note.id = res.id;
-      this.notesCache.unshift(note);
+      // Check if it's already in cache (e.g. from triggerAutoSave)
+      const existingIdx = this.notesCache.findIndex(n => n.id === note.id);
+      if (existingIdx !== -1) {
+        this.notesCache[existingIdx] = { ...this.notesCache[existingIdx], ...note };
+      } else {
+        this.notesCache.unshift(note);
+      }
       this.notesSubject.next([...this.notesCache]);
       this.notesChangedSubject.next(note);
     }
@@ -125,14 +134,11 @@ export class NoteService {
   }
 
 
-  async getAllNotes() {
-    return await window.electronAPI.notes.getAllNotes();
-  }
 
   // load notes from backend into shared cache
   async loadNotes(): Promise<void> {
     try {
-      const rows = await window.electronAPI.notes.getAllNotes();
+      const rows = await window.electronAPI.notes.getAllNotes(this.userIdSource.value);
       this.notesCache = Array.isArray(rows) ? rows : [];
       this.notesSubject.next([...this.notesCache]);
     } catch (err) {
@@ -161,6 +167,9 @@ export class NoteService {
   }
 
   private saveNoteToElectron(note: Note) {
+    if (note.userID === undefined || note.userID === null || note.userID === 0) {
+      note.userID = this.getUserId();
+    }
     return window.electronAPI.notes.createNote(note);
   }
 
@@ -168,7 +177,25 @@ export class NoteService {
   triggerAutoSave(note: Note) {
     // lazy init the autosave pipeline
     if (!this.saveSub) this.initAutoSave();
+
+    // Update cache immediately for real-time UI updates
+    if (note.id !== undefined && note.id !== null) {
+      const idx = this.notesCache.findIndex(n => n.id === note.id);
+      if (idx !== -1) {
+        this.notesCache[idx] = { ...this.notesCache[idx], ...note };
+      }
+    } else {
+      // For new notes being typed, we don't have an ID yet.
+      // We might want to avoid adding them to the cache multiple times.
+      // Usually, the first auto-save will create it and set the ID.
+    }
+    this.notesSubject.next([...this.notesCache]);
+
     this.saveSubject.next(note);
+  }
+
+  public getNotesCache(): Note[] {
+    return this.notesCache;
   }
 
   //#endregion
@@ -185,17 +212,20 @@ export class NoteService {
   public readonly categoriesChanged$: Observable<void> = this.categoriesChangedSubject.asObservable();
 
   async getNoteWithCertainCategory(categoryID: number) {
-    const res = await window.electronAPI.notes.getNoteWithCertainCategory(categoryID);
+    const userId = this.getUserId();
+    const res = await window.electronAPI.notes.getNoteWithCertainCategory(categoryID, userId);
     console.log('NoteService.getNoteWithCertainCategory', categoryID, res);
     return res;
   }
 
   async getCategoriesFromElectron() {
-    return await window.electronAPI.notes.getCategories();
+    const userId: number = this.userIdSource.getValue();
+    return await window.electronAPI.notes.getCategories(userId);
   }
   async loadCategories() {
     try {
       const rows = await this.getCategoriesFromElectron();
+      console.log("uwuw",rows);
       this.categoriesCache = Array.isArray(rows) ? rows : [];
       this.categoriesSubject.next([...this.categoriesCache]);
       console.log('Categories loaded:', this.categoriesCache);
@@ -242,8 +272,7 @@ export class NoteService {
   //#endregion
 
   //#region User
-  private userIdSource = new BehaviorSubject<number>(0);
-  currentUserId$ = this.userIdSource.asObservable();
+
 
   async createUser(user: User): Promise<User> {
     return await window.electronAPI.notes.createUser(user);
